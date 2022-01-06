@@ -1,0 +1,27 @@
+name: "VA"
+title: "Visual Analytics Journey"
+description: |
+  My Website
+output_dir: "_site"
+navbar:
+  left:
+    - text: "DataViz Makeover"
+      menu:
+      - text: "DataViz1"
+        href: dataviz1.html
+      - text: "DataViz2"
+        href: dataviz2.html
+    - text: "Take-home Exercises"
+      menu:
+      - text: "Take-home Exercise 1"
+        href: th-ex_1.html
+      - text: "Take-home Exercise 2"
+        href: th-ex_2.html
+      - text: "Take-home Exercise 3"
+        href: th-ex_3.html
+  right:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html
+output: distill::distill_article
