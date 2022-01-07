@@ -14,11 +14,11 @@ navbar:
     - text: "Take-home Exercises"
       menu:
       - text: "Take-home Exercise 1"
-        href: th-ex_1.html
+        href: "Takehome_Exercise/ex001/ex001.html"
       - text: "Take-home Exercise 2"
-        href: th-ex_2.html
+        href: ex002.html
       - text: "Take-home Exercise 3"
-        href: th-ex_3.html
+        href: ex003.html
   right:
     - text: "Home"
       href: index.html
