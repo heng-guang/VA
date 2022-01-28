@@ -1,7 +1,7 @@
 ---
 title: "In-class Exercise 2"
 description: |
-  In this exercise, I learnt how to create a Pareto chart in R
+  In this exercise, I learnt how to start a Pareto chart in R
 author:
   - name: Sia Heng Guang
     url: https://www.linkedin.com/in/hengguang/
@@ -26,7 +26,6 @@ for (p in packages){
 }
 ```
 
--readr is one of the 
 
 ```{r}
 orders <- read_xls("data/Superstore-2021.xls",
@@ -44,26 +43,13 @@ joined_tab <- left_join(returns, orders)
 ### Compute the frequency count by Sub-Category
 
 ```{r}
-FC_tab <- joined_tab %>%
-  group_by('Sub-Category') %>%
-  summarise('Returns' = count(as.factor('Sub-Category'))) %>%
+freq_returned <- joined_tab %>%
+  group_by(`Sub-Category`) %>%
+  summarise('Returns' = n()) %>%
   ungroup()
 ```
 
 ```{r}
-freq_returned <- joined_tab %>%
-  count('Sub-Category')
-```
-
-```{r}
-freq_returned <- freq_returned %>%
-  arrange(desc(n))
-```
-
-```{r}
-freq_returned$cumulative <- cumsum(freq_returned$n)
-```
-
-```{r}
-
+freq_sorted <- freq_returned %>%
+  arrange(desc(Returns))
 ```
