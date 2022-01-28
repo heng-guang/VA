@@ -1,0 +1,69 @@
+---
+title: "In-class Exercise 2"
+description: |
+  In this exercise, I learnt how to create a Pareto chart in R
+author:
+  - name: Sia Heng Guang
+    url: https://www.linkedin.com/in/hengguang/
+    affiliation: MITB Analytics Track
+    affiliation_url: https://scis.smu.edu.sg/
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+packages = c('tidyverse', 'readxl')
+
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+-readr is one of the 
+
+```{r}
+orders <- read_xls("data/Superstore-2021.xls",
+                   sheet = "Orders")
+returns <- read_xls("data/Superstore-2021.xls",
+                    sheet = "Returns")
+```
+
+### Join the returns and orders
+
+```{r}
+joined_tab <- left_join(returns, orders)
+```
+
+### Compute the frequency count by Sub-Category
+
+```{r}
+FC_tab <- joined_tab %>%
+  group_by('Sub-Category') %>%
+  summarise('Returns' = count(as.factor('Sub-Category'))) %>%
+  ungroup()
+```
+
+```{r}
+freq_returned <- joined_tab %>%
+  count('Sub-Category')
+```
+
+```{r}
+freq_returned <- freq_returned %>%
+  arrange(desc(n))
+```
+
+```{r}
+freq_returned$cumulative <- cumsum(freq_returned$n)
+```
+
+```{r}
+
+```
