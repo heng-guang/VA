@@ -5,10 +5,10 @@ description: |
 output_dir: "_site"
 navbar:
   left:
-    - text: "DataViz Makeover"
+    - text: "In Class Exercise"
       menu:
-      - text: "DataViz1"
-        href: dataviz1.html
+      - text: "In-Class Exercise 1"
+        href: "Inclass_Exercise/ex001/ex001.html"
       - text: "DataViz2"
         href: dataviz2.html
     - text: "Take-home Exercises"
