@@ -1,0 +1,70 @@
+---
+title: "In Class Exercise 1: Building Elegant Graphics with ggplot2"
+description: |
+  A new article created using the Distill format.
+author:
+  - name: Sia Heng Guang 
+    url: https://example.com/norajones
+    affiliation: Spacely Sprockets
+    affiliation_url: https://example.com/spacelysprokets
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+knitr::opts_chunk$set(
+  fig.retina = 3,
+  cache = FALSE,
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE)
+```
+# Installing and loading the required libraries
+
+```{r}
+packages = c('tidyverse', 'ggrepel')
+
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+# Import data into R
+
+```{r}
+exam_data <- read_csv("data/Exam_data.csv")
+```
+
+# My first data visualisation created using ggplot2
+
+```{r}
+ggplot(data=exam_data, aes(x = MATHS)) +
+  geom_histogram(bins = 20,
+                 boundary = 100,
+                 color = "black",
+                 fill = "light blue") +
+  ggtitle("Distribution of Maths scores")
+```
+
+# Exploring various options
+
+```{r}
+ggplot(data=exam_data, aes(x = MATHS, fill = RACE)) +
+  geom_histogram(bins = 20,
+                 color = "grey30") +
+  ggtitle("Distribution of Maths scores")
+```
+
+```{r}
+ggplot(data=exam_data, aes(y = MATHS, x = GENDER)) +
+  geom_boxplot() +
+  geom_point(stat = "summary",
+             fun.y = "mean",
+             colour = "red",
+             size = 4) +
+  ggtitle("Distribution of Maths scores")
+```
