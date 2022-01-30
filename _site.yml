@@ -9,16 +9,26 @@ navbar:
       menu:
       - text: "In-Class Exercise 1"
         href: "Inclass_Exercise/ex001/ex001.html"
-      - text: "In-Class Exercise 1"
+      - text: "In-Class Exercise 2"
         href: "Inclass_Exercise/ex002/ex002.html"
+      - text: "In-Class Exercise 3"
+        href: "Inclass_Exercise/ex003/ex003.html"
     - text: "Take-home Exercises"
       menu:
       - text: "Take-home Exercise 1"
         href: "Takehome_Exercise/ex001/ex001.html"
       - text: "Take-home Exercise 2"
-        href: ex002.html
+        href: "Takehome_Exercise/ex002/ex002.html"
       - text: "Take-home Exercise 3"
-        href: ex003.html
+        href: "Takehome_Exercise/ex003/ex003.html"
+    - text: "DataViz Makeover"
+      menu:
+      - text: "DataViz Makeover 1"
+        href: "DataViz_Makeover/ex001/ex001.html"
+      - text: "DataViz Makeover 2"
+        href: "DataViz_Makeover/ex002/ex002.html"
+      - text: "DataViz Makeover 3"
+        href: "DataViz_Makeover/ex003/ex003.html"
   right:
     - text: "Home"
       href: index.html
