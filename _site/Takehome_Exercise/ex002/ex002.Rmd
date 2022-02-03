@@ -85,7 +85,7 @@ options(scipen=999)
 popn <- bind_rows(popn_0010, popn_1120)
 
 total_popn <- popn %>%
-  group_by(AG,Time, Sex) %>%
+  group_by(AG,Time, Sex, PA) %>%
   summarise(Population=sum(Pop)) %>%
   ungroup()
 
@@ -108,85 +108,109 @@ This will give us a tibble as seen below.
 
 ## Interactive Chart
 
-We can now create a basic interactive chart that shows the population of Males/Females in Singapore in a certain year based on the age groups.
+We can now create a basic interactive chart that shows the population of Males/Females in Singapore in selected planning areas and years based on the age groups.
 
 ### Plotting the Data
 
-First, we assign a tooltip to what we want to show on text hover, in this case we want to show the Population of an Age Group in a specific Year.
+We can define a **function** that takes in the desired *Planning Area* and *Years.* Based on these parameters, the data frame will be **filtered** using the user's input. Then, we assign a tooltip to what we want to show on text hover, in this case we want to show the *Population* of an *Age Group* in a specific *Year.*
+
+We then use the same code as in [Take-home Exercise 1](https://hengguang-608.netlify.app/takehome_exercise/ex001/ex001), while changing the **Title** and **Subtitle** to ensure clarity. We also add a **label = name** in the mapping to show the tooltip later. Since the data set consists of planning areas and years, we can use a [**facet_grid**](https://ggplot2.tidyverse.org/reference/facet_grid.html) to plot the various Planning Areas and Years.
+
+Lastly, we pass through the figure through [**ggplotly**](https://plotly.com/ggplot2/facet_grid/) to make the chart interactive and to display the tooltip on hover. As this is a function, we have to return the plot using the **return** command.
+
 
 ```{r}
-name <- paste0("\n", total_popn$Sex, 
-               " Population of Ages ", total_popn$AG,
-                      "\nin the Year ", total_popn$Time, 
-                      "\n= ", total_popn$Population)
-```
+facetplot <- function(pa_selected, year_selected) {
 
-We then use the same code as in [Take-home Exercise 1](https://hengguang-608.netlify.app/takehome_exercise/ex001/ex001), while changing the **Title** and **Subtitle** to ensure clarity. We also add a **label = name** in the mapping to show the tooltip later.
+total_popn_filtered <- total_popn %>%
+  filter(PA %in% pa_selected & 
+           Time %in% year_selected)
 
-In this plot, we also pass through a colour through the geom_col function to clearly show the separation of Years.
-
-```{r}
-p <- ggplot(data = total_popn,
+name <- paste0("\n", total_popn_filtered$Sex, 
+               " Population of Ages ", total_popn_filtered$AG,
+                      "\nin the Year ", total_popn_filtered$Time, 
+                      "\n= ", total_popn_filtered$Population)
+  
+p <- ggplot(data = total_popn_filtered,
        mapping = aes(
          x=ifelse(test = Sex=="Males", yes=-Population,
                   no=Population), 
          y=AG, 
          fill=Sex,
-         label = name)) + 
-  theme(panel.background = element_rect(fill="white"),
-        panel.border = element_rect(linetype=1, fill=NA)) +
-  geom_col(color="black") +
-  labs(x="Cumulative Population") +
-  labs(y="Age Groups") +
-  labs(title = "Population of Singapore",
-       subtitle = "Aggregated, 2000-2020") +
-  scale_x_symmetric(labels=abs)
+         label=name)) + 
+        geom_col() +
+        theme(panel.background = element_rect(fill="white"),
+              panel.border = element_rect(linetype=1, fill=NA),
+              panel.spacing = unit(0.5, "lines")) +
+        labs(x="Population") +
+        labs(y="Age Groups") +
+        labs(title = "Population of Singapore") +
+        scale_x_symmetric(labels=abs)
 
-p 
+p <- p + facet_grid(PA ~ Time)
+
+fig <- ggplotly(p, tooltip = c("label"))
+
+return(fig)
+}
 ```
 
+We can then define some arguments for comparison. In this example, I have provided 4 planning areas ("Bedok","Jurong East", "Ang Mo Kio", "Punggol") and 5 different years ("2000", "2005", "2010", "2015", "2020") to be plotted. The function can take in any amount of arguments, but the user is advised to pass in small sets of arguments at a time to appreciate the differences in plots!
 
-
-Next, we use the **ggplotly** function of the *plotly* package and change the default tooltip (which shows every mapped value) to the tooltip we want with the code chunk below.
-
-```{r}
-ggplotly(p, tooltip = c("label"))
+```{r, layout = "l-screen-inset", fig.width=6, fig.height = 8}
+facetplot(c("Bedok","Jurong East", "Ang Mo Kio", "Punggol"),
+          c("2000", "2005", "2010", "2015", "2020"))
 ```
-
-We can now interact with the chart, and it shows the data that we want to show on hover, great! Other interactive elements include the ability to filter Male and Female population only. We can also zoom in on the chart if there is a particular data point that we are interested in, as shown below.
-
-![](img/chart_zoom.png) 
-![](img/chart_zoom2.png)
+As this is a Distill article, we also pass through the layout argument [**l-screen-inset**](https://rstudio.github.io/distill/figures.html) to make use of the full width that Distill articles do not usually have.
 
 ## Animated Chart
 
-Next, we want an animated chart to show the changes in the population pyramid structure over time. 
+We can also plot an animated chart to show the changes in the population pyramid structure over time. 
 
 ### Plotting the data
 
 We can make use of the earlier ggplot object, **p**, and change the labels including the x-axis, Title and remove the subtitle to prepare for our animated plot with the code chunk below. 
 
+```{r}
+pp <- ggplot(data = total_popn,
+       mapping = aes(
+         x=ifelse(test = Sex=="Males", yes=-Population,
+                  no=Population), 
+         y=AG, 
+         fill=Sex)) + 
+  theme(panel.background = element_rect(fill="white"),
+        panel.border = element_rect(linetype=1, fill=NA)) +
+  geom_col() +
+  labs(x="Population") +
+  labs(y="Age Groups") +
+  labs(title = "Population of Singapore",
+       subtitle = "Aggregated, 2000-2020") +
+  scale_x_symmetric(labels=abs)
+
+pp
+```
+
 We use a parameter **frame_time** as an input to show the year when we animate it later.
 
 ```{r}
-p2 <- p +
+pp2 <- pp +
   labs(x="Population") +
   labs(title = "Population of Singapore, 
        {as.integer(frame_time)}", subtitle = NULL)
 
-p2
+pp2
 ```
 
 Do not worry about the population values as they will be sub-divided using the **Time** column.
 
-Lastly, we will use the **transition_time** and **ease_aes** functions of the *gganimate* package to show how the data changes over time, and pass the **Time** column (which shows the years) as an animation.
+Lastly, we will use the **transition_time** and **ease_aes** functions of the [*gganimate*](https://cran.r-project.org/web/packages/gganimate/gganimate.pdf) package to show how the data changes over time, and pass the **Time** column (which shows the years) as an animation. We also add a **start_pause** and **end_pause** to show the end state longer. The result is shown below.
 
 ```{r}
-panim <- p2 +
+ppanim <- pp2 +
   transition_time(Time) +
-  ease_aes('linear')
-
-panim
+  ease_aes('linear') 
+  
+animate(ppanim, start_pause=20, end_pause = 20, fps=20)
 ```
 
 ## Conclusion
