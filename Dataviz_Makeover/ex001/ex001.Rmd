@@ -59,7 +59,7 @@ The original data visualisation is shown below.
 
 At first glance, the chart seems to be really beautiful, with a proper font, large array of colours, and even a simple title. However, on closer inspection, one cannot really tell what information is meant to be understood from the graph.
 
-The image below is obtained from [Ben Jones](https://dataremixed.com/2012/05/clarity-or-aesthetics-part-2-a-tale-of-four-quadrants/), an author who occasionally write about data visualisation.
+The image below is obtained from [Ben Jones](https://dataremixed.com/2012/05/clarity-or-aesthetics-part-2-a-tale-of-four-quadrants/), an author who occasionally writes about data visualisation.
 
 <center>
 
