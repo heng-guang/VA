@@ -1,10 +1,18 @@
 ---
-title: "About this site"
-description: |
-  This website consists of a collection of works done for ISSS608 Visual Analytics and Applications
+title: "Sia Heng Guang"
+image: "hg.jpg"
+links:
+  - label: LinkedIn
+    url: "https://www.linkedin.com/in/hengguang/"
+  - label: GitHub
+    url: "https://github.com/heng-guang"
+  - label: Email
+    url: "mailto:hgsia.2021@mitb.smu.edu.sg"
+output:
+  postcards::jolla
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
-```
+ 
+This website consists of a collection of works done for ISSS608 Visual Analytics and Applications. 
+The exercises contained are all reproducible and hopefully helpful in your data analytics journey!
+Connect with me on LinkedIn if you have any feedback or questions!
 

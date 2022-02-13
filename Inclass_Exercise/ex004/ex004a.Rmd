@@ -1,0 +1,227 @@
+---
+title: "In-class Exercise 4a"
+description: |
+  In this exercise, I learnt how perform multivariate analysis by plotting a correlation plot in R
+author:
+  - name: Sia Heng Guang
+    url: https://www.linkedin.com/in/hengguang/
+    affiliation: MITB Analytics Track
+    affiliation_url: https://scis.smu.edu.sg/
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    code_folding: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Installing relevant libraries
+
+```{r}
+packages = c('corrplot','tidyverse','ggstatsplot')
+
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+## Importing data 
+
+```{r}
+wine <- read_csv("data/wine_quality.csv")
+```
+
+## Using base R pairs() to plot correlation matrix
+
+### Default matrix
+
+We can create a 11 by 11 matrix using the [pairs](https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/pairs.html) function.
+
+```{r}
+pairs(wine[,1:11])
+```
+
+### Customised matrix
+
+However, since the correlation matrix is symmetrical, it is better to show different data in the upper and lower triangles of the plot.
+
+We want to add the correlation coefficient in the upper half of the triangle, and have to use a function to do so:
+
+```{r}
+panel.cor <- function(x, y, digits=2, prefix="", cex.cor, ...) {
+usr <- par("usr")
+on.exit(par(usr))
+par(usr = c(0, 1, 0, 1))
+r <- abs(cor(x, y, use="complete.obs"))
+txt <- format(c(r, 0.123456789), digits=digits)[1]
+txt <- paste(prefix, txt, sep="")
+if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+text(0.5, 0.5, txt, cex = cex.cor * (1 + r) / 2)
+}
+```
+
+```{r}
+pairs(wine[,1:11], 
+      upper.panel = panel.cor)
+```
+
+However, as you can see, the plot is very cluttered due to the amount of data points (6497), which is more than 500 and hence the scatter plots do not look very appealing.
+
+## Using ggcormat() to plot correlation matrix
+
+We can use the [ggcorrmat()](https://indrajeetpatil.github.io/ggstatsplot/reference/ggcorrmat.html) function to visualise the correlation matrix.
+
+```{r}
+ggstatsplot::ggcorrmat(
+  data = wine, 
+  cor.vars = 1:11,
+)
+```
+
+The cor.vars argument is used to compute the correlation matrix for the corrgram.
+
+We can further customise the plot using additional arguments ggcorrplot.args. One of the important ones is the hc.order. We can set the hierarchical clustering order to true to automatically arrange the correlation matrix to visualise better. We can also add in the title and subtitle as shown below.
+
+```{r}
+ggstatsplot::ggcorrmat(
+  data = wine, 
+  cor.vars = 1:11,
+  ggcorrplot.args = list(outline.color = "black", 
+                         hc.order = TRUE,
+                         tl.cex = 10),
+  title    = "Correlogram for wine dataset",
+  subtitle = "Four pairs are not significant at p < 0.05"
+)
+```
+
+ggcorrmat supports faceting. However, we need to use the group_ggcormat() function instead of the ggcorrmat function. We can split the types of wine using the grouping.var argument.
+
+```{r}
+grouped_ggcorrmat(
+  data = wine,
+  cor.vars = 1:11,
+  grouping.var = type,
+  type = "robust",
+  p.adjust.method = "holm",
+  plotgrid.args = list(ncol = 2),
+  ggcorrplot.args = list(outline.color = "black", 
+                         hc.order = TRUE,
+                         tl.cex = 10),
+  annotation.args = list(
+    tag_levels = "a",
+    title = "Correlogram for wine dataset",
+    subtitle = "The measures are: alcohol, sulphates, fixed acidity, citric acid, chlorides, residual sugar, density, free sulfur dioxide and volatile acidity",
+    caption = "Dataset: UCI Machine Learning Repository"
+  )
+)
+```
+
+## Using corrplot() to plot correlation matrix
+
+We can also use the [corrplot](https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html) package to plot the correlation matrix.
+
+Firstly, we need to compute the correlation matrix using Base R and store it.
+
+```{r}
+wine.cor <- cor(wine[, 1:11])
+```
+
+We use the corrplot() function to plot the basic corrgram.
+
+```{r}
+corrplot(wine.cor)
+```
+
+We can use visual geometrics to enhance the correlation plot, using different shapes. The default is circle but can be changed as shown below.
+
+```{r}
+corrplot(wine.cor,
+         method="ellipse")
+```
+
+Others methods such as circle(default), square, ellipse, number, shade, color and pie can be used.
+
+corrplot can support three layout types, full, upper and lower.
+
+```{r}
+corrplot(wine.cor, 
+         method = "ellipse", 
+         type="lower")
+```
+
+```{r}
+corrplot(wine.cor, 
+         method = "ellipse", 
+         type="lower",
+         diag = FALSE,
+         tl.col = "black")
+```
+
+We can use the corrplot.mixed to show combine upper and lower layouts.
+
+```{r}
+corrplot.mixed(wine.cor, 
+               lower = "ellipse", 
+               upper = "number",
+               tl.pos = "lt",
+               diag = "l",
+               tl.col = "black")
+```
+
+We can also combine corrplots with significant testing.
+
+```{r}
+wine.sig = cor.mtest(wine.cor, conf.level= .95)
+```
+
+```{r}
+corrplot(wine.cor,
+         method = "number",
+         type = "lower",
+         diag = FALSE,
+         tl.col = "black",
+         tl.srt = 45,
+         p.mat = wine.sig$p,
+         sig.level = .05)
+```
+
+
+### Reordering the corrgram
+
+We can reorder the corrgram using additional functions.
+
+This is using the AOE method.
+
+“AOE” is for the angular order of the eigenvectors. See Michael Friendly (2002) for details.
+
+```{r}
+corrplot.mixed(wine.cor, 
+               lower = "ellipse", 
+               upper = "number",
+               tl.pos = "lt",
+               diag = "l",
+               order="AOE",
+               tl.col = "black")
+```
+
+This is using hierarchical clustering. We have to specify the clustering method as well, in this case using ward.D.
+
++ “hclust” for hierarchical clustering order, and “hclust.method” for the agglomeration method to be used.
++ “hclust.method” should be one of “ward”, “single”, “complete”, “average”, “mcquitty”, “median” or “centroid”.
+
+```{r}
+corrplot(wine.cor, 
+         method = "ellipse", 
+         tl.pos = "lt",
+         tl.col = "black",
+         order="hclust",
+         hclust.method = "ward.D",
+         addrect = 3)
+```
+
