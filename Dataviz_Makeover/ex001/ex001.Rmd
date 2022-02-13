@@ -24,6 +24,18 @@ d-article p {
 }
 ```
 
+```{r}
+packages = c('knitr')
+
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+
 # 1   Introduction
 
 This data makeover is based on the data provided by the Ministry of Manpower, Singapore (MOM). The data is available on the [MOM website](https://stats.mom.gov.sg/Pages/LabourForceTimeSeries.aspx) in .xlsx (Microsoft Excel) format and is titled **"Resident Labour Force Participation Rate by Age and Sex"**.
