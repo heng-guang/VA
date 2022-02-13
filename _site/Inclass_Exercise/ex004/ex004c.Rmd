@@ -1,26 +1,27 @@
 ---
-title: "In-class Exercise 4"
+title: "In-class Exercise 4c"
 description: |
-  In this exercise, I learnt how perform multivariate analysis in R
+  In this exercise, I learnt how perform multivariate analysis using a Parallel Coordinates Plot (PCP) in R
 author:
   - name: Sia Heng Guang
     url: https://www.linkedin.com/in/hengguang/
     affiliation: MITB Analytics Track
     affiliation_url: https://scis.smu.edu.sg/
 date: "`r Sys.Date()`"
-output: distill::distill_article
+output: 
+  distill::distill_article:
+    toc: true
+    code_folding: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Installaing relevant libraries
+## Installing relevant libraries
 
 ```{r}
-packages = c('ggiraph', 'plotly', 'DT', 'patchwork', 
-             'gganimate', 'tidyverse', 'readxl', 'gifski',
-             'gapminder')
+packages = c('GGally', 'parcoords', 'parallelPlot', 'tidyverse')
 
 for (p in packages){
   if(!require(p, character.only = T)){
@@ -33,5 +34,141 @@ for (p in packages){
 ## Importing data 
 
 ```{r}
-exam_data <- read_csv("data/Exam_data.csv")
+wh <- read_csv("data/WHData-2018.csv")
+```
+
+## Building a PCP using ggparcoord() of GGally package
+
+The code chunk below is used to plot a basic parallel coordinates by using ggparcoord() of GGally package.
+
+```{r}
+ggparcoord(data = wh, 
+           columns = c(7:12))
+```
+
++ Underlay univariate boxplots, add title, use uniminmax scaling
+
+```{r}
+ggparcoord(data = wh, 
+           columns = c(7:12), 
+           groupColumn = 2,
+           scale = "uniminmax",
+           alphaLines = 0.2,
+           boxplot = TRUE, 
+           title = "Parallel Coord. Plot of World Happiness Attributes")
+```
+
+We can plot PCP  with facet.
+
++ Underlay univariate boxplots, add title, use uniminmax scaling
+
+```{r}
+ggparcoord(data = wh, 
+           columns = c(7:12), 
+           groupColumn = 2,
+           scale = "uniminmax", 
+           boxplot = TRUE, 
+           title = "Parallel Coord. Plot of World Happines Attributes") +
+  facet_wrap(~ Region)
+```
+
+
+## Building a PCP using parcoord()
+
+parcoords is a htmlwidget for d3 parallel coordinates plot. It can plot an interactive PCP and also serves the flexibility, and robustness of htmlwidgets. We can also implement [parcoords in Shiny](https://cran.r-project.org/web/packages/parcoords/parcoords.pdf)
+
+
+### Static PCP
+
+The code below plot a parallel coordinates plot using the basic parcoords() syntax.
+
+```{r}
+parcoords(wh[,7:12])
+```
+
+In fact, the basic syntax can only plot a static parallel coordinates plot.
+
+### Interactive PCP
+
+In the code chunk below, two interactivity arguments are used, they are:
+
++ reorderable argument enables reordering of axes when it is set to TRUE or T, and
++ brushMode argument provides highlighting with brushing. Three options are provided, they are: “1D-axes”, “1D-axes-multi”, or “2D-strums”.
+
+```{r}
+parcoords(
+ wh[,7:12],
+ rownames = FALSE,
+ reorderable = T,
+ brushMode = '1D-axes',
+ width = 700,
+ height = 400)
+```
+
++ By setting the rownames argument to FALSE will exclude the default rawnames column.
++ By using width argument to avoid horizontal scrolling.
++ By using height argument to change the height of the parallel coordinates plot.
+
+### Changing aesthetic properties
+
+In the code chunk below, two arguments are used, they are:
+
++ alpha to set the opacity of the polylines. The value range from 0 (completely transparent) to 1 (no opacity).
++ alphaOnBrushed to set opacity from 0 to 1 when brushed (default to 0). This is so that we can see the remaining plots for context.
+
+```{r}
+parcoords(
+ wh[,7:12],
+ rownames = FALSE,
+ alpha = 0.3,
+ alphaOnBrushed = 0.2,
+ reorderable = T,
+ brushMode = '1D-axes',
+ width = 700,
+ height = 400)
+```
+
+
+## Building a PCP using parallelPlot()
+
+[parallelPlot](https://cran.r-project.org/web/packages/parallelPlot/) is an R package specially designed to plot a parallel coordinates plot by using ‘htmlwidgets’ package and d3.js. 
+
+The code chunk below plot an interactive parallel coordinates plot by using parallelPlot().
+
+### Basic Plot
+
+```{r}
+wh <- wh %>%
+  select("Happiness score", c(7:12))
+parallelPlot(wh)
+```
+
+### Changing the aesthetics
+
+In the code chunk below, rotateTitle argument is used to avoid overlapping axis labels.
+
+```{r}
+parallelPlot(wh,
+             rotateTitle = TRUE)
+```
+
+One of the useful interactive feature of parallelPlot is we can click on a variable of interest, for example Happiness score, the monotonous blue colour (default) will change a blues with different intensity colour scheme will be used.
+
+We can change the default blue colour scheme by using continousCS argument as shown in the code chunk below.
+
+```{r}
+parallelPlot(wh,
+             continuousCS = "YlOrRd",
+             rotateTitle = TRUE)
+```
+
+### Combining plots
+
+In the code chunk below, histoVisibility argument is used to plot histogram along the axis of each variables.
+
+```{r}
+histoVisibility <- rep(TRUE, ncol(wh))
+parallelPlot(wh,
+             rotateTitle = TRUE,
+             histoVisibility = histoVisibility)
 ```

@@ -1,26 +1,27 @@
 ---
-title: "In-class Exercise 4"
+title: "In-class Exercise 4b"
 description: |
-  In this exercise, I learnt how perform multivariate analysis in R
+  In this exercise, I learnt how perform multivariate analysis by plotting a heatmap plot in R
 author:
   - name: Sia Heng Guang
     url: https://www.linkedin.com/in/hengguang/
     affiliation: MITB Analytics Track
     affiliation_url: https://scis.smu.edu.sg/
 date: "`r Sys.Date()`"
-output: distill::distill_article
+output: 
+  distill::distill_article:
+    toc: true
+    code_folding: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Installaing relevant libraries
+## Installing relevant libraries
 
 ```{r}
-packages = c('ggiraph', 'plotly', 'DT', 'patchwork', 
-             'gganimate', 'tidyverse', 'readxl', 'gifski',
-             'gapminder')
+packages = c('seriation', 'dendextend', 'heatmaply', 'tidyverse')
 
 for (p in packages){
   if(!require(p, character.only = T)){
@@ -33,5 +34,165 @@ for (p in packages){
 ## Importing data 
 
 ```{r}
-exam_data <- read_csv("data/Exam_data.csv")
+wh <- read_csv("data/WHData-2018.csv")
+```
+
+## Data Wrangling
+
+```{r}
+row.names(wh) <- wh$Country
+```
+
+```{r}
+wh1 <- dplyr::select(wh, c(3, 7:12))
+wh_matrix <- data.matrix(wh)
+```
+
+## Building a static heatmap using heatmap() of base R
+
+We can use the heatmap() function on the matrix to plot a heatmap.
+
+The Rowv = NA and Colv = NA are used to switch off the dendograms which are on by default.
+
+```{r}
+wh_heatmap <- heatmap(wh_matrix,
+                      Rowv=NA, Colv=NA)
+```
+
+```{r}
+wh_heatmap <- heatmap(wh_matrix)
+```
+
+We can normalise it column-wise.
+
+```{r}
+wh_heatmap <- heatmap(wh_matrix,
+                      scale="column",
+                      cexRow = 0.6, 
+                      cexCol = 0.8,
+                      margins = c(10, 4))
+```
+
+## Building an interactive heatmap using heatmaply()
+
+
+```{r}
+heatmaply(wh_matrix[, -c(1, 2, 4, 5)],
+          scale = "column")
+```
+
+We can normalise it as well.
+
+```{r}
+heatmaply(normalize(wh_matrix[, -c(1, 2, 4, 5)]))
+```
+
+Similar to normalising, we can use the percentise method to divide the values by the maximum rank. Each value is the percent of observations that is above or below the value.
+
+```{r}
+heatmaply(percentize(wh_matrix[, -c(1, 2, 4, 5)]))
+```
+
+### Clustering methods
+
+We can use hierarchical clustering using the Euclidean distance and ward.D.
+
+```{r}
+heatmaply(normalize(wh_matrix[, -c(1, 2, 4, 5)]),
+          dist_method = "euclidean",
+          hclust_method = "ward.D")
+```
+
+However, to determine the best clustering method, the dend_expend() and find_k() functions of the dendextend package will be used
+
+```{r}
+wh_d <- dist(normalize(wh_matrix[, -c(1, 2, 4, 5)]), method = "euclidean")
+dend_expend(wh_d)[[3]]
+```
+
+From this, we can see that the average method should be used as it has the highest optimum value.
+
+Then, we can use find_k() to find the optimal number of clusters.
+
+```{r}
+wh_clust <- hclust(wh_d, method = "average")
+num_k <- find_k(wh_clust)
+plot(num_k)
+```
+
+With that, we can now prepare the heatmap like below.
+
+```{r}
+heatmaply(normalize(wh_matrix[, -c(1, 2, 4, 5)]),
+          dist_method = "euclidean",
+          hclust_method = "average",
+          k_row = 3)
+```
+
+
+### Seriation
+
+The clustering does not place the rows in a definite order. Hence, we need to use seriation package to optimise the distance between adjacent leaves (labels).
+
+We can use the Optimal Leaf Ordering (OLO) by default to do this.
+
+```{r}
+heatmaply(normalize(wh_matrix[, -c(1, 2, 4, 5)]),
+          seriate = "OLO")
+```
+
+We can also use the Gruvaeus and Wainer (GW) for a faster heuristic.
+
+```{r}
+heatmaply(normalize(wh_matrix[, -c(1, 2, 4, 5)]),
+          seriate = "GW")
+```
+
+The option “mean” gives the output we would get by default from heatmap functions in other packages such as gplots::heatmap.2.
+
+```{r}
+heatmaply(normalize(wh_matrix[, -c(1, 2, 4, 5)]),
+          seriate = "mean")
+```
+
+The option “none” gives us the dendrograms without any rotation that is based on the data matrix.
+
+```{r}
+heatmaply(normalize(wh_matrix[, -c(1, 2, 4, 5)]),
+          seriate = "none")
+```
+
+### Adding finishing touches
+
+We can apply a colour palette to improve the aesthetics of the heatmap.
+
+```{r}
+heatmaply(normalize(wh_matrix[, -c(1, 2, 4, 5)]),
+          seriate = "none",
+          colors = Blues)
+```
+
+We can pass additional arguments to the heatmap to further refine the figure.
+
+In the code chunk below the following arguments are used:
+
++ k_row is used to produce 5 groups.
++ margins is used to change the top margin to 60 and row margin to 200.
++ fontsizw_row and fontsize_col are used to change the font size for row and column labels to 4.
++ main is used to write the main title of the plot.
++ xlab and ylab are used to write the x-axis and y-axis labels respectively.
+
+```{r}
+heatmaply(normalize(wh_matrix[, -c(1, 2, 4, 5)]),
+          Colv=NA,
+          seriate = "none",
+          colors = Blues,
+          k_row = 5,
+          margins = c(NA,200,60,NA),
+          fontsize_row = 4,
+          fontsize_col = 5,
+          main="World Happiness Score and Variables by Country, 2018 \nDataTransformation using Normalise Method",
+          xlab = "World Happiness Indicators",
+          ylab = "World Countries"
+          )
 ```
