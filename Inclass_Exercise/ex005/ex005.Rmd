@@ -1,0 +1,199 @@
+---
+title: "In-class Exercise 5"
+description: |
+  In this exercise, I learnt how to visualise and analyse Time-Oriented data with R
+author:
+  - name: Sia Heng Guang
+    url: https://www.linkedin.com/in/hengguang/
+    affiliation: MITB Analytics Track
+    affiliation_url: https://scis.smu.edu.sg/
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    code_folding: true
+    theme: hg_theme.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Installing relevant libraries
+
+```{r}
+packages = c('scales', 'viridis', 
+             'lubridate', 'ggthemes', 
+             'gridExtra', 'tidyverse', 
+             'readxl', 'knitr',
+             'data.table', 'plotly')
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+## Plotting a Calendar Heatmap using ggplot()
+
+### Importing and examining data 
+
+```{r}
+attacks <- read_csv("data/eventlog.csv")
+```
+
+For example, kable() can be used to review the structure of the imported data frame.
+
+```{r}
+kable(head(attacks))
+```
+
+### Extracting day of the week and hour of the day variables
+
+We need to convert the timezones in different countries to a reference time zone, as the time and day of attacks are based on the individual countries themselves.
+
+The function below converts each time with the appropriate time zone, the time zone parameter, *tz*, only takes a single value, then extract its weekdays and hour. 
+
+```{r}
+make_hr_wkday <- function(ts, sc, tz) {
+  real_times <- ymd_hms(ts, 
+                        tz = tz[1], 
+                        quiet = TRUE)
+  dt <- data.table(source_country = sc,
+                   wkday = weekdays(real_times),
+                   hour = hour(real_times))
+  return(dt)
+  }
+```
+
+We also need to convert the weekday and hour into factors so that they will be in an ordered form while plotting.
+
+```{r}
+wkday_levels <- c('Sunday', 'Monday', 
+                  'Tuesday', 'Wednesday', 
+                  'Thursday', 'Friday', 
+                  'Saturday')
+attacks <- attacks %>%
+  group_by(tz) %>%
+  do(make_hr_wkday(.$timestamp, 
+                   .$source_country, 
+                   .$tz ) ) %>% 
+  ungroup() %>% 
+  mutate(wkday = factor(wkday, 
+                        levels = wkday_levels),
+         hour  = factor(hour, 
+                        levels = 0:23))
+```
+
+### Plotting a Calendar Heatmap
+
+After data assigning orders to the time variable, we can now group the data. We will also use na.omit to remove any rows with NA values.
+
+```{r}
+grouped <- attacks %>% 
+  count(wkday, hour) %>% 
+  ungroup()
+
+grouped <- na.omit(grouped)
+```
+
+We can now use the ggplot function to plot a heatmap. Using x as the hour and y as the weekday, we can pass the dataframe through the function easily.
+
+```{r}
+p1 <- ggplot(grouped, 
+       aes(hour, 
+           wkday, 
+           fill = n)) + 
+geom_tile(color = "white", 
+          size = 0.1) + 
+theme_tufte(base_family = "Helvetica") + 
+coord_equal() + 
+scale_fill_viridis(name = "# of Events", 
+                   label = comma) + 
+labs(x = NULL, 
+     y = NULL, 
+     title = "Events per day of week & time of day") +
+theme(axis.ticks = element_blank(),
+      plot.title = element_text(hjust = 0.5),
+      legend.title = element_text(size = 8),
+      legend.text = element_text(size = 6) )
+
+p1
+```
+
+After assigning it to a variable, we can apply the ggplotly function to make it interactive.
+
+```{r}
+ggplotly(p1)
+
+```
+
+
+## Plotting a Cycle Plot using ggplot()
+
+### Importing and examining data 
+
+```{r}
+air <- read_excel("data/arrivals_by_air.xlsx")
+```
+
+### Data Wrangling
+
+We can extract the month and year data into separate columns from the Month-Year column
+
+```{r}
+air$month <- factor(month(air$`Month-Year`), 
+                    levels=1:12, 
+                    labels=month.abb, 
+                    ordered=TRUE) 
+air$year <- year(ymd(air$`Month-Year`))
+```
+
+We can extract the country we one e.g. New Zealand using the code below.
+
+```{r}
+New_Zealand <- air %>% 
+  select(`New Zealand`, 
+         month, 
+         year) %>%
+  filter(year >= 2010)
+```
+
+Then, we can use the dplyr functions group_by and summarise to compute the average arrivals per month. This data will be used to plot the average arrivals for each month.
+
+```{r}
+hline.data <- New_Zealand %>% 
+  group_by(month) %>%
+  summarise(avgvalue = mean(`New Zealand`))
+```
+
+### Using ggplot() for the cycle plot
+
+We can now pass through the ggplot function for the cycle plot. The geom_line function is used to plot the line graph for arrivals, while the geom_hline is used to plot the average line for each month.
+
+```{r}
+p2 <- ggplot() + 
+  geom_line(data=New_Zealand,
+            aes(x=year, 
+                y=`New Zealand`, 
+                group=month), 
+            colour="black") +
+  geom_hline(aes(yintercept=avgvalue), 
+             data=hline.data, 
+             linetype=6, 
+             colour="red", 
+             size=0.5) + 
+  facet_grid(~month) +
+  labs(axis.text.x = element_blank()) +
+  xlab("") +
+  ylab("No. of Visitors")
+
+p2 + theme(axis.text.x = element_text(angle = 90))
+```
+
+After assigning it to a variable, we can apply the ggplotly function to make it interactive.
+
+```{r layout="l-page"}
+ggplotly(p2)
+```
