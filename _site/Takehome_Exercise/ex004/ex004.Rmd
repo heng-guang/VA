@@ -49,7 +49,7 @@ With the horizon plot, it is easier to identify patterns and trends in stock pri
 ## Loading the required libraries
 
 
-For this exercise, we will make use of the usual [**tidyverse**](https://www.tidyverse.org/) package which containes the [*read_csv*](https://readr.tidyverse.org/reference/read_delim.html) function, **tidyquant** to scrape the data as mentioned earlier, [**ggplot2**](https://ggplot2.tidyverse.org/) and [**ggHoriPlot**](https://rivasiker.github.io/ggHoriPlot/index.html) to plot the horizon plot
+For this exercise, we will make use of the usual [**tidyverse**](https://www.tidyverse.org/) package which contains the [*read_csv*](https://readr.tidyverse.org/reference/read_delim.html) function, **tidyquant** to scrape the data as mentioned earlier, [**ggplot2**](https://ggplot2.tidyverse.org/) and [**ggHoriPlot**](https://rivasiker.github.io/ggHoriPlot/index.html) to plot the horizon plot
 
 
 ```{r}
@@ -138,9 +138,11 @@ sca <- c(0.64, 0.76, 0.88, 1, 1.12, 1.24, 1.36)
 
 Since the data has been adjusted to a base of 1, the origin can be set at 1. For the scale, we have to use values that makes sense.
 
-A popular heatmap for visualising stock prices is [*Finviz*](https://finviz.com/map.ashx). From there, we can toggle the performance time interval from one day until one year. 
+A popular heatmap for visualising stock prices is [*Finviz*](https://finviz.com/map.ashx). 
 
-From observations, the "**6 Months Performance**" is using a scale from -24% to +24% in intervals of 8%, while the "**1 Year Performance**" is using a scale from -30% to +30% in intervals of 10%. Hence, I decided to use a scale of **-36% to +36%** in intervals of 12% for a dataset of **two years**.
+![](img/finviz.png)
+
+From there, we can toggle the performance time interval from one day until one year. The "**6 Months Performance**" is using a scale from -24% to +24% in intervals of 8%, while the "**1 Year Performance**" is using a scale from -30% to +30% in intervals of 10%. Hence, I decided to use a scale of **-36% to +36%** in intervals of 12% for a dataset of **two years**.
 
 
 ## Plotting using ggHoriPlot and facet_grid
