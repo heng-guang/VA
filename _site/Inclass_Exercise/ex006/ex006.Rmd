@@ -1,0 +1,342 @@
+---
+title: "In-class Exercise 6"
+description: |
+  In this exercise, I learnt how to handle and visualise geospatial data with R.
+author:
+  - name: Sia Heng Guang
+    url: https://www.linkedin.com/in/hengguang/
+    affiliation: MITB Analytics Track
+    affiliation_url: https://scis.smu.edu.sg/
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    code_folding: true
+    theme: hg_theme.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Installing relevant libraries
+
+```{r}
+packages = c('readr', 'sf', 'tmap', 'tidyverse', 'tidyr', 'dplyr')
+for (p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+## Mapping Geospatial Point Data using R
+
+### Importing and examining data 
+
+```{r}
+sgpools <- read_csv("data/aspatial/SGPools_svy21.csv")
+```
+
+
+We can use the st_as_sf() function of the sf packages to convert the sgpools dataframe into a simple feature data frame, using the x and y coordinates. The **crs** argument requires  to put the coordinate system in Singapore's SVY21 coordinate system, which can be found on [epsg.io](epsg.io).
+
+
+```{r}
+sgpools_sf <- st_as_sf(
+  sgpools, 
+  coords = c("XCOORD",
+             "YCOORD"),
+             crs= 3414)
+```
+
+### Plotting point symbols onto the map
+
+The code chunk below is used to create an interactive point symbol map.
+
++ tmap_mode() is used to switch the display from static mode (i.e. "plot") to interactive mode (i.e. "view").
+
++ tm_shape() is used to create a tmap-element that specifies a spatial data object (i.e. point).
+
++ tm_bubble() is used to create a tmap-element that draws bubbles or small dots. Both colors and sizes of the bubbles can be mapped to data variables.
+
+```{r}
+tmap_mode("view")
+tm_shape(sgpools_sf)+
+tm_bubbles(col = "red",
+           size = 1,
+           border.col = "black",
+           border.lwd = 1)
+```
+
+To make the symbols proportionate, we need to assign a numerical variable to the size visual attribute.
+
+```{r}
+tm_shape(sgpools_sf)+
+tm_bubbles(col = "red",
+           size = "Gp1Gp2 Winnings",
+           border.col = "black",
+           border.lwd = 0.5)
+```
+
+We can also apply colour attributes to the type of outlet.
+
+```{r}
+tm_shape(sgpools_sf)+
+tm_bubbles(col = "OUTLET TYPE",
+          size = "Gp1Gp2 Winnings",
+          border.col = "black",
+          border.lwd = 0.5)
+```
+
+Tmap also allows faceted plots, which produces multiple maps and synchronised zoom and pan settings.
+
+```{r}
+tm_shape(sgpools_sf) +
+  tm_bubbles(col = "OUTLET TYPE", 
+          size = "Gp1Gp2 Winnings",
+          border.col = "black",
+          border.lwd = 1) +
+  tm_facets(by= "OUTLET TYPE",
+            nrow = 1,
+            sync = TRUE)
+```
+
+## Choropleth Mapping with R
+
+We will learn:
+
++ to import an aspatial data in R by using readr pakage,
++ to import geospatial data (ESRI shapefile) into R as simple feature objects using sf package,
++ to perform data wrangling using dplyr and tidyr packages,
++ to plot choropleth maps using tmap package.
+
+### Importing and examining data 
+
+URA Master Plan subzone boundary will be used in shapefile format based on URA Master Plan 2014.
+
+Singapore Residents by Planning area does not have any geospatial data but contains Planning Area and Subzone values which can be used as unique identifiers.
+
+```{r}
+mpsz <- st_read(dsn = "data/geospatial", 
+                layer = "MP14_SUBZONE_WEB_PL")
+```
+
+
+We can import attribute data respopagsex2000to2018 using the read_csv() function.
+
+
+```{r}
+popagsex <- read_csv("data/aspatial/respopagsex2000to2018.csv")
+```
+
+After assigning it to a variable, we can do some data preparation:
+
++ Extracting 2018 records only
++ Extracting Male records only
++ Deriving new variables, Young, Economically Active and Aged
+
+```{r}
+popagsex2018_male <- popagsex %>%
+  filter(Sex == "Males") %>%
+  filter(Time == 2018) %>%
+  spread(AG, Pop) %>%
+  mutate(YOUNG = `0_to_4`+`5_to_9`+`10_to_14`+
+`15_to_19`+`20_to_24`) %>%
+mutate(`ECONOMY ACTIVE` = rowSums(.[9:13])+
+rowSums(.[15:17]))%>%
+mutate(`AGED`=rowSums(.[18:22])) %>%
+mutate(`TOTAL`=rowSums(.[5:22])) %>%  
+mutate(`DEPENDENCY` = (`YOUNG` + `AGED`)
+/`ECONOMY ACTIVE`) %>%
+mutate_at(.vars = vars(PA, SZ), 
+          .funs = funs(toupper)) %>%
+  select(`PA`, `SZ`, `YOUNG`, 
+         `ECONOMY ACTIVE`, `AGED`, 
+         `TOTAL`, `DEPENDENCY`) %>%
+  filter(`ECONOMY ACTIVE` > 0)
+```
+
+Next, we use left_join to join the geospatial data and the attribute table using the SZ as the common identifier.
+
+
+```{r}
+mpsz_agemale2018 <- left_join(mpsz,
+                              popagsex2018_male,
+                              by = c("SUBZONE_N" = "SZ"))
+```
+
+
+### Plotting the map
+
+The chunk below plots a basic choropleth map.
+
+```{r}
+tmap_mode("plot")
+qtm(mpsz_agemale2018, 
+    fill = "DEPENDENCY")
+```
+
+We can also use tmap() to customise the plot further. The code chunk below shows the basic input data required to plot the subzone polygons.
+
+```{r}
+tm_shape(mpsz_agemale2018) +
+  tm_polygons()
+```
+
+We can use a selected variable to show the distribution.
+
+```{r}
+tm_shape(mpsz_agemale2018)+
+  tm_polygons("DEPENDENCY")
+```
+
+We can take note of the following:
+
++ By default, 5 bins will be used.
++ The default data classification method used is called "pretty".
++ The default colour scheme used is "YlOrRd" of ColorBrewer. You will learn more about the color palette later.
++ By default, Missing value will be shaded in gray.
+
+If we use the tm_fill instead of tm_polygons, we can see the data without the polygons boundary. We can customise other attributes further if we do this.
+
+
+```{r}
+tm_shape(mpsz_agemale2018)+
+  tm_fill("DEPENDENCY")
+```
+
+We draw in the borders of the subzones using the tm_borders:
+
++ lwd = border line width. The default is 1,
++ alpha = transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the col is used (normally 1),
++ col = border colour, and
++ lty = border line type. The default is "solid".
+
+```{r}
+tm_shape(mpsz_agemale2018)+
+  tm_fill("DEPENDENCY") +
+  tm_borders(lwd = 0.1,
+             alpha = 1)
+```
+
+Choropleth maps employ some method of data classification, and then group them into certain data ranges.
+
+tmap provides a total ten data classification methods, namely: fixed, sd, equal, pretty (default), quantile, kmeans, hclust, bclust, fisher, and jenks. We use the style argument of the tm_fill() or tm_polygons().
+
+
+```{r}
+tm_shape(mpsz_agemale2018)+
+  tm_fill("DEPENDENCY",
+          n = 8,
+          style = "quantile") +
+  tm_borders(alpha = 0.5)
+```
+
+tmap also supports predefined colour ramps from RColorBrewer, which we can use the palette argument of tm_fill().
+
+
+```{r}
+tm_shape(mpsz_agemale2018)+
+  tm_fill("DEPENDENCY",
+          n = 6,
+          style = "quantile",
+          palette = "Blues") +
+  tm_borders(alpha = 0.5)
+```
+
+We can also reverse the colour shading by adding a "-" prefix.
+
+
+```{r}
+tm_shape(mpsz_agemale2018)+
+  tm_fill("DEPENDENCY",
+          style = "quantile",
+          palette = "-Blues") +
+  tm_borders(alpha = 0.5)
+```
+
+We can also include a legend.
+
+```{r}
+tm_shape(mpsz_agemale2018)+
+  tm_fill("DEPENDENCY", 
+          style = "quantile", 
+          palette = "Blues", 
+          legend.hist = TRUE, 
+          legend.is.portrait = TRUE,
+          legend.hist.z = 0.1) +
+  tm_layout(main.title = "Distribution of Dependency Ratio by planning subzone \n(Quantile classification)",
+            main.title.position = "center",
+            main.title.size = 1,
+            legend.height = 0.45,
+            legend.width = 0.35,
+            legend.outside = FALSE,
+            legend.position = c("right", "bottom"),
+            frame = FALSE) +
+  tm_borders(alpha = 0.5)
+```
+
+tmap also has different layout settings which can be called using tmap_style().
+
+```{r}
+tm_shape(mpsz_agemale2018)+
+  tm_fill("DEPENDENCY", 
+          style = "quantile", 
+          palette = "-Greens") +
+  tm_borders(alpha = 0.5) +
+  tmap_style("classic")
+```
+
+In the code chunk below, tm_compass(), tm_scale_bar() and tm_grid() are used to add compass, scale bar and grid lines onto the choropleth map.
+
+```{r}
+tm_shape(mpsz_agemale2018)+
+  tm_fill("DEPENDENCY", 
+          style = "quantile", 
+          palette = "Blues",
+          title = "No. of persons") +
+  tm_layout(main.title = "Distribution of Dependency Ratio \nby planning subzone",
+            main.title.position = "center",
+            main.title.size = 1.2,
+            legend.height = 0.45, 
+            legend.width = 0.35,
+            frame = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar(width = 0.15) +
+  tm_grid(lwd = 0.1, alpha = 0.2) +
+  tm_credits("Source: Planning Sub-zone boundary from Urban Redevelopment Authorithy (URA)\n and Population data from Department of Statistics DOS",
+             position = c("left", "bottom"))
+```
+
+To reset back to the default style, we can use the "white" style.
+
+```{r}
+tmap_style("white")
+```
+
+### Multiple small choropleth maps
+
+We can use facet maps to compose maps side by side or stacked vertically. 
+
+In tmap, small multiple maps can be plotted in three ways:
+
++ by assigning multiple values to at least one of the asthetic arguments,
++ by defining a group-by variable in tm_facets(), and
++ by creating multiple stand-alone maps with tmap_arrange().
+
+We define the ncols in tm_fill() using a vector:
+
+```{r}
+tm_shape(mpsz_agemale2018)+
+  tm_fill(c("YOUNG", "AGED"),
+          style = "equal", 
+          palette = "Blues") +
+  tm_layout(legend.position = c("right",
+                                "bottom")) +
+  tm_borders(alpha = 0.5) +
+  tmap_style("white")
+```
+

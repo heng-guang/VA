@@ -54,7 +54,7 @@ For this exercise, we will make use of the usual [**tidyverse**](https://www.tid
 
 ```{r}
 options(scipen=999)
-packages = c('tidyverse', 'tidyquant', 'ggplot2', 'ggHoriPlot')
+packages = c('tidyverse', 'tidyquant', 'ggplot2', 'ggHoriPlot','plotly')
 
 for (p in packages){
   if(!require(p, character.only = T)){
@@ -195,11 +195,21 @@ p1 <- ggplot(stock_prices3) +
   scale_x_date(expand=c(0,0),
                date_breaks = "1 month", 
                date_labels = "%b %y") +
-  labs(fill = "% Change",
+  labs(fill = "Proportion",
        title = "Change in Prices of Top 40 Listed Singapore Companies by Market Cap")
 
 p1
 ```
+We can try to use Plotly to make the map interactive:
+
+```{r, code_folding = FALSE}
+ggplotly(p1)
+```
+
+We see an error as shown. As the ggHoriplot is a fairly recent addition (Sep 2021), it has not been implemented in plotly yet. Hence, we are unfortunately unable to interact with the data.
+
+![](img/plotlyerror.png)
+
 
 # Conclusion
 
