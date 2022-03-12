@@ -51,6 +51,10 @@ navbar:
         href: "DataViz_Makeover/ex001/ex001.html"
       - text: "DataViz Makeover 2"
         href: "DataViz_Makeover/ex002/ex002.html"
+    - text: "Visual Analytics Project"
+      menu:
+      - text: "Proposal"
+        href: "Project/prop/proposal.html"
   right:
     - text: "Home"
       href: index.html

@@ -1,0 +1,79 @@
+---
+title: "Project Proposal"
+description: |
+  Project proposal for the group Visual Analytics Project.
+author:
+  - names: Mak Han Ren, Sia Heng Guang, Tan Jit Kai
+    affiliation: Singapore Management University Master of IT in Business
+    affiliation_url: https://scis.smu.edu.sg/master-it-business
+date: "`r Sys.Date()`"
+output: 
+ distill::distill_article:
+   toc: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Project Motivation
+
+
+Real estate is an industry where information is critical to make the right decisions, especially when looking for purchase expensive homes for stay or investment and much of the information while publicly available, is not easily accessed by the average home buyer. 
+
+Currently, property listing websites like 99.co and Propnex allow for buyers to do specific searches for currently existing properties in the market, however any analytics regarding previous transactions or further information is limited to their paid service applications meant for property agents. 
+
+This means that home buyers are not able to easily study the price trends for themselves without consulting an agent directly who may not be willing to share certain information with them. Our project aims to provide a data visualization tool so that users can see basic analytics regarding past real estate trends in Singapore to make more informed decisions when buying property. 
+
+
+# Objective 
+
+We aim to use various R packages such as tidyverse, ggstatsplot, tmap, plotly, etc. to build an interactive R Shiny application dashboard that will allow our users to perform the following analysis: 
+
+  1) Exploratory and Confirmatory Data Analysis 
+
+  2) Predictive Analysis 
+
+
+# Application Use Cases
+
+### Potential Home Seekers 
+
+With the hundreds of thousands of past sales transactions data, buyers will be able to look at the trends of the property market over the previous years and isolate certain key factors such as location, type of property etc. to know what kind of prices they should be expecting to see before they search for listings.
+
+### Investment Seekers 
+
+Users will be able to see the trends in turnover profits for past properties with similar characteristics to properties they are planning to purchase. Certain factors which would affect the flipping prices can be identified to help them decide what needs to be considered in their decisions.]
+
+# Data
+
+Dataset used is obtained from the [**Realis**](https://www.ura.gov.sg/reis/index) database which has comprehensive transactional information regarding the Singapore property market.  
+
+We will be using the private residential sales data for the previous 10 years from January 2012 to December 2021. 
+
+
+## Proposed Analytical Methods and Visualizations
+
+### Map
+
+We will create a map module to show the prices and distribution of transactions in Singapore during the selected time periods.
+Filters will also be included so that users will be able to see the transactions more relevant to them.
+
+The filters include (but are not limited to):
+  1) Property Type
+  2) Year
+  3) Price
+  4) Location
+  5) Property Size
+  
+### Exploratory Data Analysis
+
+To explore the dataset and identify useful trends with interactive visualizations that will be understandable with rudimentary statistical knowledge. 
+
+### Confirmatory Data Analysis
+
+Using statistical testing methods to support the findings found in the exploratory data analysis. Optional viewing for users who might be interested in this. 
+
+### Prediction Model
+
+Using past data to create a predictive model on what price range users should expect for a property with their defined characteristics. 

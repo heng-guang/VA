@@ -141,7 +141,7 @@ After assigning it to a variable, we can do some data preparation:
 popagsex2018_male <- popagsex %>%
   filter(Sex == "Males") %>%
   filter(Time == 2018) %>%
-  spread(AG, Pop) %>%
+  pivot_wider(names_from=`AG`,values_from = `Pop`) %>%
   mutate(YOUNG = `0_to_4`+`5_to_9`+`10_to_14`+
 `15_to_19`+`20_to_24`) %>%
 mutate(`ECONOMY ACTIVE` = rowSums(.[9:13])+
@@ -340,3 +340,69 @@ tm_shape(mpsz_agemale2018)+
   tmap_style("white")
 ```
 
+We can also directly use the tm_polygons and pass multiple values:
+
+```{r}
+tm_shape(mpsz_agemale2018)+ 
+  tm_polygons(c("DEPENDENCY","AGED"),
+          style = c("equal", "quantile"),
+          palette = list("Blues","Greens")) +
+  tm_layout(legend.position = c("right",
+                                "bottom"))
+```
+
+If not, we can use the tm_fill with tm_facets, while setting free.coords = TRUE to split each map with their own coordinate ranges.
+
+We also put drop.units = FALSE to include all the regions with 0 population. By default, it is set to TRUE to drop them.
+
+
+```{r}
+tm_shape(mpsz_agemale2018) +
+  tm_fill("DEPENDENCY",
+          style = "quantile",
+          palette = "Blues",
+          thres.poly = 0) + 
+  tm_facets(by="REGION_N",
+            free.coords=TRUE,
+            drop.units=FALSE) +
+  tm_layout(legend.show = FALSE,
+            title.position = c("center",
+                               "center"), 
+            title.size = 20) +
+  tm_borders(alpha = 0.5)
+```
+
+If we have multiple choropleth maps made using different code chunks, we can arrange them together using tmap_arrange()
+
+```{r}
+youngmap <- tm_shape(mpsz_agemale2018)+ 
+  tm_polygons("YOUNG", 
+              style = "quantile", 
+              palette = "Blues")
+agedmap <- tm_shape(mpsz_agemale2018)+ 
+  tm_polygons("AGED", 
+              style = "quantile", 
+              palette = "Blues")
+tmap_arrange(youngmap,
+             agedmap,
+             asp=1,
+             ncol=2)
+```
+
+Lastly, if we want to specify a region to map and enlarge it, we can use filter the tm_shape initially.
+
+```{r}
+tm_shape(mpsz_agemale2018[mpsz_agemale2018$REGION_N=="CENTRAL REGION", ]) +
+  tm_fill("DEPENDENCY", 
+          style = "quantile", 
+          palette = "Blues", 
+          legend.hist = TRUE, 
+          legend.is.portrait = TRUE,
+          legend.hist.z = 0.1) +
+  tm_layout(legend.outside = TRUE,
+            legend.height = 0.45, 
+            legend.width = 5.0,
+            legend.position = c("right", "bottom"),
+            frame = FALSE) +
+  tm_borders(alpha = 0.5)
+```

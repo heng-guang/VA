@@ -1,0 +1,473 @@
+---
+title: "In-class Exercise 7"
+description: |
+  In this exercise, I learnt how to create a graph network with R.
+author:
+  - name: Sia Heng Guang
+    url: https://www.linkedin.com/in/hengguang/
+    affiliation: MITB Analytics Track
+    affiliation_url: https://scis.smu.edu.sg/
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+    code_folding: false
+    theme: hg_theme.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Installing relevant libraries
+
+```{r}
+packages = c('igraph', 'tidygraph', 
+             'ggraph', 'visNetwork', 
+             'lubridate', 'clock',
+             'tidyverse', 'circlize',
+             'chorddiag')
+for(p in packages){
+  if(!require(p, character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+```
+
+## Analysing and Visaulising Network Data
+
+### Importing and examining data 
+
+
+```{r}
+GAStech_nodes <- read_csv("data/GAStech_email_node.csv")
+GAStech_edges <- read_csv("data/GAStech_email_edge-v2.csv")
+```
+
+
+We can examine the structure of the data using glimpse() of dplyr.
+
+
+```{r}
+glimpse(GAStech_edges)
+```
+
+
+We can see that the SentDate is actually stored as chr (character) type instead of date data type. Hence, we need to change it back to date type.
+
+
+```{r}
+GAStech_edges$SentDate  = dmy(GAStech_edges$SentDate)
+GAStech_edges$Weekday = wday(GAStech_edges$SentDate, 
+                             label = TRUE, 
+                             abbr = FALSE)
+```
+
+Take note of the following:
+
++ both dmy() and wday() are functions of lubridate package. lubridate is an R package that makes it easier to work with dates and times.
++ dmy() transforms the SentDate to Date data type.
++ wday() returns the day of the week as a decimal number or an ordered factor if label is TRUE. The argument abbr is FALSE keep the daya spells in full, i.e. Monday. The function will create a new column in the data.frame i.e. Weekday and the output of wday() will save in this newly created field.
++ the values in the Weekday field are in ordinal scale.
+
+Lets check the data again.
+
+```{r}
+glimpse(GAStech_edges)
+```
+
+It seems like the date is now in the correct format.
+
+### Wrangling Attributes
+
+The data frame consists of individual email flow records. We need to aggregate the individual by date, senders, receivers, main subject and day of the week.
+
+```{r}
+GAStech_edges_aggregated <- GAStech_edges %>%
+  filter(MainSubject == "Work related") %>%
+  group_by(source, target, Weekday) %>%
+    summarise(Weight = n()) %>%
+  filter(source!=target) %>%
+  filter(Weight > 1) %>%
+  ungroup()
+```
+
+
+### Using tidygraph to prepare the graph chart
+
+The code chunk below is first used to create a tbl_graph object, which will then be converted to a graph chart using ggraph.
+
+```{r}
+GAStech_graph <- tbl_graph(nodes = GAStech_nodes,
+                           edges = GAStech_edges_aggregated, 
+                           directed = TRUE)
+```
+
+Reviewing the output graph object.
+
+```{r}
+GAStech_graph
+```
+
+If we want to rearrange the rows in the edges to list those with the highest 'weight' first, we can use activate() and then arrange().
+
+```{r}
+GAStech_graph %>%
+  activate(edges) %>%
+  arrange(desc(Weight))
+```
+
+## Plotting Network Data with ggraph
+
+
+To plot the network graph, we require three attributes - nodes, edges and layouts.
+
+A basic network graph can be plotted using ggraph(), geom-edge_link() and geom_node_point(). ggraph() can use either an igraph object or a tbl_graph object, the latter which we created earlier.
+
+
+```{r}
+ggraph(GAStech_graph) +
+  geom_edge_link() +
+  geom_node_point()
+```
+
+
+We can also customise a theme for the graph.
+
+```{r}
+g <- ggraph(GAStech_graph) + 
+  geom_edge_link(aes()) +
+  geom_node_point(aes())
+g + theme_graph()
+```
+
+theme_graph() makes it easy to change the colours of the plot.
+
+
+```{r}
+g <- ggraph(GAStech_graph) + 
+  geom_edge_link(aes(colour = 'grey50')) +
+  geom_node_point(aes(colour = 'grey40'))
+g + theme_graph(background = 'grey10',
+                text_colour = 'white')
+
+```
+
+
+We can use different layouts of the ggraph() function, such as the Fruchterman and Reingold layout.
+
+```{r}
+g <- ggraph(GAStech_graph, 
+            layout = "fr") +
+  geom_edge_link(aes()) +
+  geom_node_point(aes())
+g + theme_graph()
+```
+
+Because the geom_node_point has the same attributes as geo_point of ggplot2, we can customise how the different points look like by passing through the colour and size arguments.
+
+```{r}
+g <- ggraph(GAStech_graph, 
+            layout = "nicely") + 
+  geom_edge_link(aes()) +
+  geom_node_point(aes(colour = Department, 
+                      size = 3))
+g + theme_graph()
+```
+
+We can also vary the thickness of the edges depending on the weights of the network, by adding attributes to geom_edge_link.
+
+```{r}
+g <- ggraph(GAStech_graph, 
+            layout = "nicely") +
+  geom_edge_link(aes(width=Weight), 
+                 alpha=0.2) +
+  scale_edge_width(range = c(0.1, 5)) +
+  geom_node_point(aes(colour = Department), 
+                  size = 3)
+g + theme_graph()
+```
+
+## Using facets to plot network graphs
+
+We might want to separate the information by weekdays. For this, we will use the facet_edges() function to target the **edges.** The theme() attribute is also used to change the legend position to the bottom.
+
+For the facet_edges() function, we pass through the th_foreground change the foreground colour and add a border to segregate the plots. 
+
+
+```{r}
+set_graph_style()
+g <- ggraph(GAStech_graph, 
+            layout = "nicely") + 
+  geom_edge_link(aes(width=Weight), 
+                 alpha=0.2) +
+  scale_edge_width(range = c(0.1, 5)) +
+  geom_node_point(aes(colour = Department), 
+                  size = 2) +
+  theme(legend.position = 'bottom')
+
+g + facet_edges(~Weekday) +
+  th_foreground(foreground = "grey80",  
+                border = TRUE)
+```
+
+We can also use facet_nodes() to plot facets, by targeting the **nodal points.**
+
+```{r}
+set_graph_style()
+g <- ggraph(GAStech_graph, 
+            layout = "nicely") + 
+  geom_edge_link(aes(width=Weight), 
+                 alpha=0.2) +
+  scale_edge_width(range = c(0.1, 5)) +
+  geom_node_point(aes(colour = Department), 
+                  size = 2)
+
+g + facet_nodes(~Department)+
+  th_foreground(foreground = "grey80",  
+                border = TRUE) +
+  theme(legend.position = 'bottom')
+
+```
+
+### Centrality indices in a network
+
+There are four well-known centrality measures, namely: degree, betweenness, closeness and eigenvector.
+
+We can **mutate** the GAStech_graph data using the centrality_betweenness() of tidygraph to show the betweenness between the nodes.
+
+```{r}
+g <- GAStech_graph %>%
+  mutate(betweenness_centrality = centrality_betweenness()) %>%
+  ggraph(layout = "fr") + 
+  geom_edge_link(aes(width=Weight), 
+                 alpha=0.2) +
+  scale_edge_width(range = c(0.1, 5)) +
+  geom_node_point(aes(colour = Department,
+            size=betweenness_centrality))
+g + theme_graph()
+```
+
+An easier method is to use ggraph *directly*, which added the centrality measures in the calls from ggraph v2.0 onwards.
+
+```{r}
+g <- GAStech_graph %>%
+  ggraph(layout = "fr") + 
+  geom_edge_link(aes(width=Weight), 
+                 alpha=0.2) +
+  scale_edge_width(range = c(0.1, 5)) +
+  geom_node_point(aes(colour = Department, 
+                      size = centrality_betweenness()))
+g + theme_graph()
+```
+
+### Visualising Community
+
+idygraph package inherits many of the community detection algorithms imbedded into igraph and makes them available to us, including Edge-betweenness (group_edge_betweenness), Leading eigenvector (group_leading_eigen), Fast-greedy (group_fast_greedy), Louvain (group_louvain), Walktrap (group_walktrap), Label propagation (group_label_prop), InfoMAP (group_infomap), Spinglass (group_spinglass), and Optimal (group_optimal). Some community algorithms are designed to take into account direction or weight, while others ignore it.
+
+We use the group_edge_betweenness() function below.
+
+
+```{r}
+g <- GAStech_graph %>%
+  mutate(community = as.factor(group_edge_betweenness(weights = Weight, directed = TRUE))) %>%
+  ggraph(layout = "fr") + 
+  geom_edge_link(aes(width=Weight), 
+                 alpha=0.2) +
+  scale_edge_width(range = c(0.1, 5)) +
+  geom_node_point(aes(colour = community))  
+g + theme_graph()
+```
+
+## Building Interactive Network Graph with visNetwork
+
+* visNetwork() is a R package for network visualization, using vis.js javascript library.
+
+* visNetwork() function uses a nodes list and edges list to create an interactive graph.
+
+  + The nodes list must include an "id" column, and the edge list must have "from" and "to" columns.
+  + The function also plots the labels for the nodes, using the names of the actors from the "label" column in the node list.
+
+* The resulting graph is fun to play around with.
+
+  + You can move the nodes and the graph will use an algorithm to keep the nodes properly spaced.
+  + You can also zoom in and out on the plot and move it around to re-center it.
+
+```{r}
+GAStech_edges_aggregated <- GAStech_edges %>%
+  left_join(GAStech_nodes, by = c("sourceLabel" = "label")) %>%
+  rename(from = id) %>%
+  left_join(GAStech_nodes, by = c("targetLabel" = "label")) %>%
+  rename(to = id) %>%
+  filter(MainSubject == "Work related") %>%
+  group_by(from, to) %>%
+    summarise(weight = n()) %>%
+  filter(from!=to) %>%
+  filter(weight > 1) %>%
+  ungroup()
+```
+
+The visNetwork requires the data to be in the form of "from and to".
+
+We can then use the visNetwork() function to plot a simple interactive network graph.
+
+```{r}
+visNetwork(GAStech_nodes, 
+           GAStech_edges_aggregated)
+```
+
+We can plot this into a layout to interact with it better. (Drag the points to see how it moves)
+
+
+```{r}
+visNetwork(GAStech_nodes,
+           GAStech_edges_aggregated) %>%
+  visIgraphLayout(layout = "layout_with_fr")
+```
+
+### Working with Visual Attributes - Nodes
+
+visNetwork() looks for a field called "group" in the nodes object and colour the nodes according to the values of the group field.
+
+The code chunk below rename *Department* field to *group.*
+
+```{r}
+GAStech_nodes <- GAStech_nodes %>%
+  rename(group = Department)
+```
+
+When we rerun the code below, the visNetwork shades each node by assigning a unique colour to each category.
+
+```{r}
+visNetwork(GAStech_nodes,
+           GAStech_edges_aggregated) %>%
+  visIgraphLayout(layout = "layout_with_fr") %>%
+  visLegend() %>%
+  visLayout(randomSeed = 123)
+```
+
+### Working with Visual Attributes - Edges
+
+In the code run below [visEdges()](http://datastorm-open.github.io/visNetwork/edges.html) is used to symbolise the edges.
+
+* The argument arrows is used to define where to place the arrow.
+* The smooth argument is used to plot the edges using a smooth curve.
+
+```{r}
+visNetwork(GAStech_nodes,
+           GAStech_edges_aggregated) %>%
+  visIgraphLayout(layout = "layout_with_fr") %>%
+  visEdges(arrows = "to", 
+           smooth = list(enabled = TRUE, 
+                         type = "curvedCW")) %>%
+  visLegend() %>%
+  visLayout(randomSeed = 123)
+
+```
+
+### Interactivity using visOptions()
+
+In the code chunk below, [visOptions()](http://datastorm-open.github.io/visNetwork/options.html) is used to incorporate interactivity features in the data visualisation.
+
+* The argument *highlightNearest* highlights nearest when clicking a node.
+* The argument *nodesIdSelection* adds an id node selection creating an HTML select element.
+
+
+```{r}
+visNetwork(GAStech_nodes,
+           GAStech_edges_aggregated) %>%
+  visIgraphLayout(layout = "layout_with_fr") %>%
+  visOptions(highlightNearest = TRUE,
+             nodesIdSelection = TRUE) %>%
+  visLegend() %>%
+  visLayout(randomSeed = 123)
+```
+
+## Visualising Flows between Entities: Chord Diagram method
+
+Sometimes, we want to visualise flows or interaction between entities such as trade, by using a chord diagram.
+
+Two R packages will be used, they are:
+
+* circlize, in particular the chordDiagram().
+* chorddiag package. Notice that this package is not in R cran. You need to install it by using the code chunk below.
+
+```{r}
+devtools::install_github("mattflor/chorddiag")
+```
+
+### Importing and examining data 
+
+In this exercise, we use [Migration and Remittances Data](https://www.worldbank.org/en/topic/migrationremittancesdiasporaissues/brief/migration-remittances-data) from The World Bank.
+
+```{r}
+mig_data <- read_csv(
+  "data/bilateral_migration2017.csv")
+```
+
+### Data Wrangling
+
+We use the pivot_longer() of dplyr to pivot them into a single column called Destination. A new column called Migrant will be used to store the migrant values.
+
+```{r}
+mig_data <- mig_data %>%
+  pivot_longer(cols = c(2:215),
+               names_to = "Destination",
+               values_to = "Migrants",)
+```
+
+Next, the code chunk below will be used to convert the Origin and Destination data type from Character into Factor.
+
+```{r}
+mig_data$`Origin` <- as.factor(
+  mig_data$Origin)
+mig_data$`Destination` <- as.factor(
+  mig_data$Destination)
+```
+
+We filter the countries to exclude flows that are less than 1m, to show significant flows.
+
+```{r}
+mig_data_selected <-mig_data %>% 
+  filter(Migrants >= 1000000)
+```
+
+### Preparing the data in an adjacency matrix
+
+Both chordDiagram() and chorddiag() require the input data in an adjacency matrix format. The code chunk below will be used to convert the tibble data frame into an adjacency matrix.
+
+```{r}
+adj_matrix <- as.matrix(
+  as_adjacency_matrix(
+    as_tbl_graph(mig_data_selected),
+    attr = "Migrants"))
+```
+
+## Plotting a basic Chord Diagram using circlize
+
+The chordDiagram() function plots a basic chord diagram to visualise the data.
+
+```{r, layout="l-page"}
+chordDiagram(adj_matrix, 
+             transparency = 0.5)
+```
+
+## Plotting a interactive chord diagram
+
+We can emphasize the large flows using the chorddiag() function with groups.
+
+```{r}
+chorddiag(data = adj_matrix,
+                 height = 1000, 
+                 width = 1000,
+                 groupnamePadding = 30,
+                 groupPadding = 3,
+                 groupColors = c("#ffffe5", "#fff7bc", "#fee391", "#fec44f", "#fe9929", 
+                                 "#ec7014", "#cc4c02", "#8c2d04"),
+                 groupnameFontsize = 13 ,
+                 showTicks = FALSE,
+                 margin=150,
+                 tooltipGroupConnector = "    &#x25B6;    ",
+                 chordedgeColor = "#B3B6B7")
+```
